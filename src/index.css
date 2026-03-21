@@ -1,3 +1,102 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 39 36% 97%;
+    --foreground: 160 10% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 10% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 10% 16%;
+
+    --primary: 151 50% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 28% 93%;
+    --secondary-foreground: 160 10% 22%;
+
+    --muted: 40 22% 92%;
+    --muted-foreground: 160 8% 40%;
+
+    --accent: 150 30% 90%;
+    --accent-foreground: 151 50% 30%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 18% 85%;
+    --input: 40 18% 85%;
+    --ring: 151 50% 42%;
+
+    --radius: 0.75rem;
+
+    --family-male: 205 78% 46%;
+    --family-female: 334 72% 58%;
+    --family-connector: 160 8% 56%;
+
+    --sidebar-background: 39 30% 95%;
+    --sidebar-foreground: 160 10% 20%;
+    --sidebar-primary: 151 50% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 30% 90%;
+    --sidebar-accent-foreground: 151 50% 30%;
+    --sidebar-border: 40 18% 85%;
+    --sidebar-ring: 151 50% 42%;
+  }
+
+  .dark {
+    --background: 160 16% 12%;
+    --foreground: 40 20% 94%;
+
+    --card: 160 16% 15%;
+    --card-foreground: 40 20% 94%;
+
+    --popover: 160 16% 15%;
+    --popover-foreground: 40 20% 94%;
+
+    --primary: 151 45% 52%;
+    --primary-foreground: 151 100% 12%;
+
+    --secondary: 160 12% 22%;
+    --secondary-foreground: 40 20% 94%;
+
+    --muted: 160 10% 24%;
+    --muted-foreground: 38 12% 72%;
+
+    --accent: 160 12% 24%;
+    --accent-foreground: 40 20% 94%;
+
+    --destructive: 0 75% 44%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 160 12% 24%;
+    --input: 160 12% 24%;
+    --ring: 151 45% 52%;
+
+    --family-male: 207 86% 63%;
+    --family-female: 332 83% 69%;
+    --family-connector: 38 10% 62%;
+
+    --sidebar-background: 160 18% 10%;
+    --sidebar-foreground: 40 20% 94%;
+    --sidebar-primary: 151 45% 52%;
+    --sidebar-primary-foreground: 151 100% 12%;
+    --sidebar-accent: 160 12% 20%;
+    --sidebar-accent-foreground: 40 20% 94%;
+    --sidebar-border: 160 12% 24%;
+    --sidebar-ring: 151 45% 52%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+}

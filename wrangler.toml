@@ -1,5 +1,7 @@
-name = "family-quicktree"
+name = "family-tree"
 compatibility_date = "2024-01-01"
+workers_dev = true
+preview_urls = false
 
 [build]
 command = "bun run build"
