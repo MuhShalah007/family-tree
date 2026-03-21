@@ -5,7 +5,8 @@ compatibility_date = "2024-01-01"
 command = "bun run build"
 cwd = "."
 
-pages_build_output_dir = "dist"
+[assets]
+directory = "./dist"
 
 [[kv_namespaces]]
 binding = "TREES"
