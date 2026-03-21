@@ -3,7 +3,7 @@ import { PersonCard } from "@/components/PersonCard";
 import { FamilyTreeGraph } from "@/components/FamilyTreeGraph";
 import { Button } from "@/components/ui/button";
 import { AddPersonForm } from "@/components/AddPersonForm";
-import { Share2, TreePine, RotateCcw, Loader2, Undo2, Redo2, Search } from "lucide-react";
+import { Share2, TreePine, RotateCcw, Loader2, Undo2, Redo2, Search, Save, History, Trash2, RotateCcwSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { PersonFormData, Gender, Person } from "@/types/family";
@@ -24,7 +24,8 @@ type ModalMode =
   | { type: "edit"; person: Person; disableGender: boolean }
   | { type: "delete_confirm"; personId: string; personName: string }
   | { type: "reset_confirm" }
-  | { type: "share"; readOnlyUrl: string; editorUrl: string };
+  | { type: "share"; readOnlyUrl: string; editorUrl: string }
+  | { type: "snapshots" };
 
 export default function FamilyTreePage() {
   const {
@@ -33,6 +34,7 @@ export default function FamilyTreePage() {
     rootPersonId,
     past,
     future,
+    snapshots,
     addPerson,
     updatePerson,
     addRelationship,
@@ -43,6 +45,9 @@ export default function FamilyTreePage() {
     undo,
     redo,
     countSpouses,
+    saveSnapshot,
+    restoreSnapshot,
+    deleteSnapshot,
   } = useFamilyStore();
 
   const [modal, setModal] = useState<ModalMode>({ type: "idle" });
@@ -346,6 +351,7 @@ export default function FamilyTreePage() {
       case "delete_confirm": return "Konfirmasi Hapus";
       case "reset_confirm": return "Konfirmasi Reset";
       case "share": return "Bagikan Silsilah";
+      case "snapshots": return "Riwayat Data";
       default: return "";
     }
   })();
@@ -390,6 +396,9 @@ export default function FamilyTreePage() {
                 </Button>
                 <Button variant="outline" size="icon" onClick={redo} disabled={future.length === 0} className="h-8 w-8">
                   <Redo2 className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setModal({ type: "snapshots" })} className="h-8 w-8">
+                  <History className="h-4 w-4" />
                 </Button>
               </div>
             )}
@@ -464,6 +473,15 @@ export default function FamilyTreePage() {
                   title="Redo"
                 >
                   <Redo2 className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setModal({ type: "snapshots" })}
+                  className="h-9 w-9"
+                  title="Riwayat Data"
+                >
+                  <History className="h-4 w-4" />
                 </Button>
               </div>
               <Button variant="whatsapp" size="sm" onClick={handleShare} disabled={isSharing} className="h-9">
@@ -645,6 +663,75 @@ export default function FamilyTreePage() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Gunakan link ini untuk kolaborasi. Siapapun yang memiliki link ini dapat mengubah silsilah.</p>
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setModal({ type: "idle" })}>Tutup</Button>
+              </div>
+            </div>
+          )}
+          {modal.type === "snapshots" && (
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium">Snapshot Data Tersimpan</h3>
+                  <Button variant="outline" size="sm" onClick={saveSnapshot}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Simpan Snapshot
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Simpan snapshot untuk menyimpan kondisi data saat ini. Anda dapat mengembalikan data ke snapshot sebelumnya kapan saja.
+                </p>
+                {snapshots.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Belum ada snapshot tersimpan.</p>
+                    <p className="text-xs mt-1">Klik "Simpan Snapshot" untuk menyimpan data saat ini.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {snapshots.slice().reverse().map((snapshot, index) => (
+                      <div 
+                        key={snapshot.createdAt} 
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            {new Date(snapshot.createdAt).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {snapshot.persons.length} anggota keluarga
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => restoreSnapshot(snapshot.createdAt)}
+                            title="Pulihkan"
+                          >
+                            <RotateCcwSquare className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => deleteSnapshot(snapshot.createdAt)}
+                            title="Hapus"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex justify-end">
                 <Button variant="outline" onClick={() => setModal({ type: "idle" })}>Tutup</Button>

@@ -10,6 +10,14 @@ interface HistoryState {
   persons: Person[];
   relationships: Relationship[];
   rootPersonId: string | null;
+  timestamp: number;
+}
+
+interface DataSnapshot {
+  persons: Person[];
+  relationships: Relationship[];
+  rootPersonId: string | null;
+  createdAt: string;
 }
 
 interface FamilyState {
@@ -19,6 +27,11 @@ interface FamilyState {
   
   past: HistoryState[];
   future: HistoryState[];
+
+  snapshots: DataSnapshot[];
+  saveSnapshot: () => void;
+  restoreSnapshot: (timestamp: string) => void;
+  deleteSnapshot: (timestamp: string) => void;
 
   saveHistory: () => void;
   undo: () => void;
@@ -51,6 +64,39 @@ export const useFamilyStore = create<FamilyState>()(
       rootPersonId: null,
       past: [],
       future: [],
+      snapshots: [],
+
+      saveSnapshot: () => {
+        const timestamp = new Date().toISOString();
+        set((state) => ({
+          snapshots: [
+            ...state.snapshots,
+            {
+              persons: state.persons,
+              relationships: state.relationships,
+              rootPersonId: state.rootPersonId,
+              createdAt: timestamp,
+            },
+          ],
+        }));
+      },
+
+      restoreSnapshot: (timestamp: string) => {
+        const snapshot = get().snapshots.find((s) => s.createdAt === timestamp);
+        if (!snapshot) return;
+        get().saveHistory();
+        set({
+          persons: snapshot.persons,
+          relationships: snapshot.relationships,
+          rootPersonId: snapshot.rootPersonId,
+        });
+      },
+
+      deleteSnapshot: (timestamp: string) => {
+        set((state) => ({
+          snapshots: state.snapshots.filter((s) => s.createdAt !== timestamp),
+        }));
+      },
 
       saveHistory: () => {
         set((state) => ({
@@ -60,6 +106,7 @@ export const useFamilyStore = create<FamilyState>()(
               persons: state.persons,
               relationships: state.relationships,
               rootPersonId: state.rootPersonId,
+              timestamp: Date.now(),
             },
           ],
           future: [],
@@ -78,6 +125,7 @@ export const useFamilyStore = create<FamilyState>()(
                 persons: state.persons,
                 relationships: state.relationships,
                 rootPersonId: state.rootPersonId,
+                timestamp: Date.now(),
               },
               ...state.future,
             ],
@@ -100,6 +148,7 @@ export const useFamilyStore = create<FamilyState>()(
                 persons: state.persons,
                 relationships: state.relationships,
                 rootPersonId: state.rootPersonId,
+                timestamp: Date.now(),
               },
             ],
             future: newFuture,
@@ -321,6 +370,14 @@ export const useFamilyStore = create<FamilyState>()(
         set({ rootPersonId: id });
       },
     }),
-    { name: "family-quicktree-storage" }
+    {
+      name: "family-quicktree-storage",
+      partialize: (state) => ({
+        persons: state.persons,
+        relationships: state.relationships,
+        rootPersonId: state.rootPersonId,
+        snapshots: state.snapshots,
+      }),
+    }
   )
 );
