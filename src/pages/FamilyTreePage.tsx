@@ -31,6 +31,8 @@ interface SharedTreePayload {
   persons: Person[];
   relationships: Relationship[];
   rootPersonId: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface ShareResponse {
@@ -92,11 +94,13 @@ export default function FamilyTreePage() {
   const { id, editKey } = useParams();
   const navigate = useNavigate();
   const isSyncing = useRef(false);
+  const lastServerVersionRef = useRef<string | null>(null);
+  const lastLocalEditAtRef = useRef(0);
 
   useEffect(() => {
     if (id && editKey) {
       setIsLoading(true);
-      fetch(`/api/trees/${id}`)
+      fetch(`/api/trees/${id}`, { cache: "no-store" })
         .then(res => {
           if (!res.ok) throw new Error("Not found");
           return res.json() as Promise<SharedTreePayload>;
@@ -114,6 +118,7 @@ export default function FamilyTreePage() {
               rootPersonId: data.rootPersonId
             });
           }
+          lastServerVersionRef.current = data.updatedAt ?? data.createdAt ?? null;
           
           // We don't want to stay on the URL with editKey for security if they copy it,
           // but actually we do, so they can bookmark it.
@@ -137,11 +142,12 @@ export default function FamilyTreePage() {
 
   // Sync changes back to server if we are in edit mode
   useEffect(() => {
-    if (id && editKey && !isSyncing.current && persons.length > 0) {
+    if (id && editKey && !isSyncing.current) {
       const syncData = async () => {
         try {
-          await fetch(`/api/trees/${id}`, {
+          const response = await fetch(`/api/trees/${id}`, {
             method: 'PUT',
+            cache: "no-store",
             headers: {
               'Content-Type': 'application/json',
             },
@@ -150,6 +156,13 @@ export default function FamilyTreePage() {
               treeData: { persons, relationships, rootPersonId }
             })
           });
+
+          if (!response.ok) {
+            throw new Error(`Sync failed with status ${response.status}`);
+          }
+
+          const result = (await response.json()) as { updatedAt?: string };
+          lastServerVersionRef.current = result.updatedAt ?? lastServerVersionRef.current;
         } catch (error) {
           console.error("Failed to sync changes", error);
         }
@@ -159,6 +172,56 @@ export default function FamilyTreePage() {
       return () => clearTimeout(timeoutId);
     }
   }, [persons, relationships, rootPersonId, id, editKey]);
+
+  useEffect(() => {
+    if (id && editKey && !isSyncing.current) {
+      lastLocalEditAtRef.current = Date.now();
+    }
+  }, [persons, relationships, rootPersonId, id, editKey]);
+
+  useEffect(() => {
+    if (!id || !editKey) return;
+
+    let cancelled = false;
+
+    const pullLatest = async () => {
+      try {
+        const response = await fetch(`/api/trees/${id}`, { cache: "no-store" });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as SharedTreePayload;
+        const incomingVersion = data.updatedAt ?? data.createdAt ?? null;
+
+        if (!incomingVersion || incomingVersion === lastServerVersionRef.current) return;
+        if (Date.now() - lastLocalEditAtRef.current < 2000) return;
+        if (cancelled) return;
+
+        isSyncing.current = true;
+        useFamilyStore.setState({
+          persons: data.persons ?? [],
+          relationships: data.relationships ?? [],
+          rootPersonId: data.rootPersonId ?? null,
+        });
+        lastServerVersionRef.current = incomingVersion;
+        toast.info("Data terbaru dimuat dari perangkat lain");
+
+        setTimeout(() => {
+          isSyncing.current = false;
+        }, 150);
+      } catch (error) {
+        console.error("Failed to pull latest data", error);
+      }
+    };
+
+    const intervalId = setInterval(() => {
+      void pullLatest();
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [id, editKey]);
 
   useEffect(() => {
     if (rootPerson) {

@@ -9,6 +9,8 @@ interface SharedData {
   persons: Person[];
   relationships: Relationship[];
   rootPersonId: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function SharedTreePage() {
@@ -20,25 +22,50 @@ export default function SharedTreePage() {
   const [layoutMode, setLayoutMode] = useState<'list' | 'hierarchical' | 'radial' | 'organic'>('list');
 
   useEffect(() => {
-    async function loadData() {
+    let cancelled = false;
+
+    async function loadData(isInitialLoad = false) {
       if (!id) {
-        setLoading(false);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
         return;
       }
 
       try {
-        const res = await fetch(`/api/trees/${id}`);
+        const res = await fetch(`/api/trees/${id}`, { cache: "no-store" });
         if (res.ok) {
           const json = (await res.json()) as SharedData;
-          setParsed(json);
+          if (cancelled) return;
+
+          setParsed((prev) => {
+            const prevVersion = prev?.updatedAt ?? prev?.createdAt ?? null;
+            const nextVersion = json.updatedAt ?? json.createdAt ?? null;
+            if (prevVersion && nextVersion && prevVersion === nextVersion) {
+              return prev;
+            }
+            return json;
+          });
         }
       } catch (e) {
         console.error("Failed to fetch shared tree", e);
       }
-      setLoading(false);
+
+      if (isInitialLoad && !cancelled) {
+        setLoading(false);
+      }
     }
 
-    loadData();
+    void loadData(true);
+
+    const intervalId = setInterval(() => {
+      void loadData(false);
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, [id]);
 
   useEffect(() => {

@@ -25,6 +25,9 @@ function createShortId(): string {
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
   Object.entries(CORS_HEADERS).forEach(([key, value]) => headers.set(key, value));
 
   return new Response(JSON.stringify(body), {
@@ -110,7 +113,7 @@ export default {
           };
 
           await env.TREES.put(treeId, JSON.stringify(updated));
-          return jsonResponse({ success: true });
+          return jsonResponse({ success: true, updatedAt: updated.updatedAt });
         } catch (error) {
           return jsonResponse({ error: `Invalid request: ${String(error)}` }, { status: 400 });
         }
