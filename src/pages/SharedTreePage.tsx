@@ -12,7 +12,7 @@ interface SharedData {
 }
 
 export default function SharedTreePage() {
-  const { data } = useParams<{ data: string }>();
+  const { id } = useParams<{ id: string }>();
   const [parsed, setParsed] = useState<SharedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,44 +21,25 @@ export default function SharedTreePage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!data) {
+      if (!id) {
         setLoading(false);
         return;
       }
 
-      // Check if it's a short ID (usually numeric or alphanumeric, not base64)
-      if (data.length < 50 && /^[a-zA-Z0-9-]+$/.test(data)) {
-        try {
-          let res = await fetch(`/api/trees/${data}`);
-          
-          // Fallback to npoint and jsonblob if local fails (for backward compatibility)
-          if (!res.ok) {
-            res = await fetch(`https://api.npoint.io/${data}`);
-          }
-          if (!res.ok) {
-            res = await fetch(`https://jsonblob.com/api/jsonBlob/${data}`);
-          }
-
-          if (res.ok) {
-            const json = await res.json();
-            setParsed(json);
-          }
-        } catch (e) {
-          console.error("Failed to fetch from remote", e);
+      try {
+        const res = await fetch(`/api/trees/${id}`);
+        if (res.ok) {
+          const json = (await res.json()) as SharedData;
+          setParsed(json);
         }
-      } else {
-        // Fallback to base64
-        try {
-          setParsed(JSON.parse(decodeURIComponent(atob(data))));
-        } catch (e) {
-          console.error("Failed to parse base64", e);
-        }
+      } catch (e) {
+        console.error("Failed to fetch shared tree", e);
       }
       setLoading(false);
     }
 
     loadData();
-  }, [data]);
+  }, [id]);
 
   useEffect(() => {
     if (parsed && parsed.rootPersonId) {
@@ -103,10 +84,20 @@ export default function SharedTreePage() {
   };
 
   const getChildren = (personId: string): Person[] => {
-    const childIds = parsed.relationships
+    const childRels = parsed.relationships
       .filter((r) => r.type === "parent_child" && r.source_person_id === personId)
-      .map((r) => r.target_person_id);
-    return parsed.persons.filter((p) => childIds.includes(p.id));
+      .sort((a, b) => {
+        const aOrder = a.order ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = b.order ?? Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+    return childRels
+      .map((rel) => parsed.persons.find((p) => p.id === rel.target_person_id))
+      .filter(Boolean) as Person[];
   };
 
   const searchResults = parsed.persons.filter(p => 

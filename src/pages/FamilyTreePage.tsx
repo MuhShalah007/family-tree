@@ -6,7 +6,7 @@ import { AddPersonForm } from "@/components/AddPersonForm";
 import { Share2, TreePine, RotateCcw, Loader2, Undo2, Redo2, Search, Save, History, Trash2, RotateCcwSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { PersonFormData, Gender, Person } from "@/types/family";
+import type { PersonFormData, Gender, Person, Relationship } from "@/types/family";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,17 @@ type ModalMode =
   | { type: "reset_confirm" }
   | { type: "share"; readOnlyUrl: string; editorUrl: string }
   | { type: "snapshots" };
+
+interface SharedTreePayload {
+  persons: Person[];
+  relationships: Relationship[];
+  rootPersonId: string | null;
+}
+
+interface ShareResponse {
+  id: string;
+  editKey: string;
+}
 
 export default function FamilyTreePage() {
   const {
@@ -88,7 +99,7 @@ export default function FamilyTreePage() {
       fetch(`/api/trees/${id}`)
         .then(res => {
           if (!res.ok) throw new Error("Not found");
-          return res.json();
+          return res.json() as Promise<SharedTreePayload>;
         })
         .then(data => {
           // Temporarily disable syncing while loading
@@ -303,7 +314,7 @@ export default function FamilyTreePage() {
       
       if (!response.ok) throw new Error("Gagal mendapatkan link");
       
-      const result = await response.json();
+      const result = (await response.json()) as ShareResponse;
       const { id: newId, editKey: newEditKey } = result;
       
       const readOnlyUrl = `${window.location.origin}/view/${newId}`;
@@ -315,14 +326,7 @@ export default function FamilyTreePage() {
       setModal({ type: "share", readOnlyUrl, editorUrl });
     } catch (error) {
       console.error("Share error:", error);
-      // Fallback to old method if API fails
-      const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
-      const url = `${window.location.origin}/view/${encoded}`;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => toast.success("Link (fallback) disalin!"));
-      }
-      const message = encodeURIComponent(`Keluarga ${rootPerson?.full_name} - ${persons.length} Anggota keluarga\n\nLihat silsilah keluarga: ${url}`);
-      window.open(`https://wa.me/?text=${message}`, "_blank");
+      toast.error("Gagal membuat link share. Coba lagi beberapa saat.");
     } finally {
       setIsSharing(false);
     }

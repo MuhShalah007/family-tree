@@ -18,6 +18,7 @@ export interface Relationship {
   source_person_id: string;
   target_person_id: string;
   created_at: string;
+  order?: number;
 }
 
 export const personSchema = z.object({

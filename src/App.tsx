@@ -17,7 +17,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<FamilyTreePage />} />
-          <Route path="/view/:data" element={<SharedTreePage />} />
+          <Route path="/view/:id" element={<SharedTreePage />} />
           <Route path="/edit/:id/:editKey" element={<FamilyTreePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

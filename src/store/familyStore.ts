@@ -47,6 +47,7 @@ interface FamilyState {
   getSpouses: (personId: string) => Person[];
   getSpouse: (personId: string) => Person | null;
   getChildren: (personId: string) => Person[];
+  reorderChildren: (parentId: string, draggedChildId: string, targetChildId: string) => void;
   getParent: (personId: string) => Person | null;
   getSiblings: (personId: string) => Person[];
   getPerson: (id: string) => Person | undefined;
@@ -227,12 +228,24 @@ export const useFamilyStore = create<FamilyState>()(
         if (type === "parent_child" && state.wouldCreateCycle(sourceId, targetId)) return null;
 
         get().saveHistory();
+        const siblingRelationships =
+          type === "parent_child"
+            ? state.relationships.filter(
+                (r) => r.type === "parent_child" && r.source_person_id === sourceId
+              )
+            : [];
+        const nextOrder =
+          type === "parent_child"
+            ? siblingRelationships.reduce((max, r) => Math.max(max, r.order ?? -1), -1) + 1
+            : undefined;
+
         const rel: Relationship = {
           id: uuid(),
           type,
           source_person_id: sourceId,
           target_person_id: targetId,
           created_at: new Date().toISOString(),
+          ...(typeof nextOrder === "number" ? { order: nextOrder } : {}),
         };
         set((s) => ({ relationships: [...s.relationships, rel] }));
         return rel;
@@ -281,10 +294,52 @@ export const useFamilyStore = create<FamilyState>()(
 
       getChildren: (personId) => {
         const { relationships, persons } = get();
-        const childIds = relationships
+        const childRelationships = relationships
           .filter((r) => r.type === "parent_child" && r.source_person_id === personId)
-          .map((r) => r.target_person_id);
-        return persons.filter((p) => childIds.includes(p.id));
+          .sort((a, b) => {
+            const aOrder = a.order ?? Number.MAX_SAFE_INTEGER;
+            const bOrder = b.order ?? Number.MAX_SAFE_INTEGER;
+            if (aOrder !== bOrder) {
+              return aOrder - bOrder;
+            }
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          });
+
+        return childRelationships
+          .map((r) => persons.find((p) => p.id === r.target_person_id))
+          .filter(Boolean) as Person[];
+      },
+
+      reorderChildren: (parentId, draggedChildId, targetChildId) => {
+        const orderedChildIds = get().getChildren(parentId).map((child) => child.id);
+        const fromIndex = orderedChildIds.indexOf(draggedChildId);
+        const toIndex = orderedChildIds.indexOf(targetChildId);
+
+        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+        const nextOrder = [...orderedChildIds];
+        const [movedId] = nextOrder.splice(fromIndex, 1);
+        nextOrder.splice(toIndex, 0, movedId);
+
+        get().saveHistory();
+        const orderMap = new Map(nextOrder.map((id, index) => [id, index]));
+
+        set((state) => ({
+          relationships: state.relationships.map((rel) => {
+            if (
+              rel.type !== "parent_child" ||
+              rel.source_person_id !== parentId ||
+              !orderMap.has(rel.target_person_id)
+            ) {
+              return rel;
+            }
+
+            return {
+              ...rel,
+              order: orderMap.get(rel.target_person_id),
+            };
+          }),
+        }));
       },
 
       getParent: (personId) => {

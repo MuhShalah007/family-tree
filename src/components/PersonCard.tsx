@@ -1,7 +1,7 @@
 import type { Person } from "@/types/family";
 import { useFamilyStore } from "@/store/familyStore";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Users, Phone, ChevronDown, ChevronRight, Cake, Pencil, Trash2 } from "lucide-react";
+import { UserPlus, Users, Phone, ChevronDown, ChevronRight, Cake, Pencil, Trash2, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { cn, calculateAge } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/simple-tooltip";
@@ -19,8 +19,9 @@ interface PersonCardProps {
 }
 
 export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpouse, onAddChild, onAddSibling, onEdit, onDelete }: PersonCardProps) {
-  const { getSpouses, getChildren } = useFamilyStore();
+  const { getSpouses, getChildren, reorderChildren } = useFamilyStore();
   const [expandLevel, setExpandLevel] = useState<0 | 1 | 2>(2);
+  const [draggedChildId, setDraggedChildId] = useState<string | null>(null);
 
   const spouses = getSpouses(person.id);
   const children = getChildren(person.id);
@@ -31,6 +32,12 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
   
   const hasGrandchildren = children.some(child => getChildren(child.id).length > 0);
   const personIcon = hasGrandchildren ? (isMale ? "👴" : "👵") : (isMale ? "👨" : "👩");
+  const childrenPreview = children
+    .slice(0, 3)
+    .map((child) => child.full_name)
+    .join(", ");
+  const collapsedChildrenLabel =
+    children.length > 3 ? `${childrenPreview}, +${children.length - 3} lagi` : childrenPreview;
 
   const age = calculateAge(person.birth_date);
 
@@ -41,6 +48,16 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
       if (prev === 1) return hasChildren ? 0 : 2;
       return 2;
     });
+  };
+
+  const handleDropOnChild = (targetChildId: string) => {
+    if (!draggedChildId || draggedChildId === targetChildId) {
+      setDraggedChildId(null);
+      return;
+    }
+
+    reorderChildren(person.id, draggedChildId, targetChildId);
+    setDraggedChildId(null);
   };
 
   return (
@@ -75,7 +92,11 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
                 <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
                   <span className="text-lg hidden sm:inline-block">{personIcon}</span>
                   <p className="truncate text-base font-semibold text-card-foreground">
-                    {expandLevel < 2 && spouses.length > 0 ? `${person.full_name} & ${spouses.map(s => s.full_name).join(', ')}` : person.full_name}
+                    {expandLevel === 0 && hasChildren
+                      ? `${person.full_name} - Anak: ${collapsedChildrenLabel}`
+                      : expandLevel < 2 && spouses.length > 0
+                      ? `${person.full_name} & ${spouses.map((s) => s.full_name).join(", ")}`
+                      : person.full_name}
                   </p>
                   {age !== null && (
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md whitespace-nowrap">
@@ -190,18 +211,33 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
       {hasChildren && expandLevel > 0 && (
         <div className="relative mt-2 ml-2 pl-2 sm:ml-6 sm:pl-4 border-l-2 border-slate-300 space-y-4 pb-2">
           {children.map((child) => (
-            <PersonCard
+            <div
               key={child.id}
-              person={child}
-              depth={depth + 1}
-              isSelected={isSelected}
-              onSelect={onSelect}
-              onAddSpouse={onAddSpouse}
-              onAddChild={onAddChild}
-              onAddSibling={onAddSibling}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
+              draggable
+              onDragStart={() => setDraggedChildId(child.id)}
+              onDragEnd={() => setDraggedChildId(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                handleDropOnChild(child.id);
+              }}
+              className={cn("relative", draggedChildId === child.id && "opacity-60")}
+            >
+              <div className="absolute -left-2 top-6 z-20 rounded bg-background/80 p-0.5 text-muted-foreground">
+                <GripVertical className="h-3.5 w-3.5" />
+              </div>
+              <PersonCard
+                person={child}
+                depth={depth + 1}
+                isSelected={isSelected}
+                onSelect={onSelect}
+                onAddSpouse={onAddSpouse}
+                onAddChild={onAddChild}
+                onAddSibling={onAddSibling}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            </div>
           ))}
         </div>
       )}

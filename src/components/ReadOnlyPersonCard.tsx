@@ -20,6 +20,12 @@ export function ReadOnlyPersonCard({ person, depth = 0, getSpouses, getChildren 
 
   const hasGrandchildren = children.some(child => getChildren(child.id).length > 0);
   const personIcon = hasGrandchildren ? (isMale ? "👴" : "👵") : (isMale ? "👨" : "👩");
+  const childrenPreview = children
+    .slice(0, 3)
+    .map((child) => child.full_name)
+    .join(", ");
+  const collapsedChildrenLabel =
+    children.length > 3 ? `${childrenPreview}, +${children.length - 3} lagi` : childrenPreview;
 
   const age = calculateAge(person.birth_date);
 
@@ -62,7 +68,11 @@ export function ReadOnlyPersonCard({ person, depth = 0, getSpouses, getChildren 
                 <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
                   <span className="text-lg hidden sm:inline-block">{personIcon}</span>
                   <p className="truncate text-base font-semibold text-card-foreground">
-                    {expandLevel < 2 && spouses.length > 0 ? `${person.full_name} & ${spouses.map(s => s.full_name).join(', ')}` : person.full_name}
+                    {expandLevel === 0 && hasChildren
+                      ? `${person.full_name} - Anak: ${collapsedChildrenLabel}`
+                      : expandLevel < 2 && spouses.length > 0
+                      ? `${person.full_name} & ${spouses.map((s) => s.full_name).join(", ")}`
+                      : person.full_name}
                   </p>
                   {age !== null && (
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md whitespace-nowrap">
