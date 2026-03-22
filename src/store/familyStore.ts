@@ -47,7 +47,9 @@ interface FamilyState {
   getSpouses: (personId: string) => Person[];
   getSpouse: (personId: string) => Person | null;
   getChildren: (personId: string) => Person[];
+  setChildrenOrder: (parentId: string, orderedChildIds: string[]) => void;
   reorderChildren: (parentId: string, draggedChildId: string, targetChildId: string) => void;
+  sortChildren: (parentId: string) => void;
   getParent: (personId: string) => Person | null;
   getSiblings: (personId: string) => Person[];
   getPerson: (id: string) => Person | undefined;
@@ -310,19 +312,19 @@ export const useFamilyStore = create<FamilyState>()(
           .filter(Boolean) as Person[];
       },
 
-      reorderChildren: (parentId, draggedChildId, targetChildId) => {
-        const orderedChildIds = get().getChildren(parentId).map((child) => child.id);
-        const fromIndex = orderedChildIds.indexOf(draggedChildId);
-        const toIndex = orderedChildIds.indexOf(targetChildId);
+      setChildrenOrder: (parentId, orderedChildIds) => {
+        const existingChildIds = get().getChildren(parentId).map((child) => child.id);
+        if (existingChildIds.length !== orderedChildIds.length) return;
 
-        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
-
-        const nextOrder = [...orderedChildIds];
-        const [movedId] = nextOrder.splice(fromIndex, 1);
-        nextOrder.splice(toIndex, 0, movedId);
+        const existingSet = new Set(existingChildIds);
+        const requestedSet = new Set(orderedChildIds);
+        if (existingSet.size !== requestedSet.size) return;
+        for (const id of existingSet) {
+          if (!requestedSet.has(id)) return;
+        }
 
         get().saveHistory();
-        const orderMap = new Map(nextOrder.map((id, index) => [id, index]));
+        const orderMap = new Map(orderedChildIds.map((id, index) => [id, index]));
 
         set((state) => ({
           relationships: state.relationships.map((rel) => {
@@ -340,6 +342,40 @@ export const useFamilyStore = create<FamilyState>()(
             };
           }),
         }));
+      },
+
+      reorderChildren: (parentId, draggedChildId, targetChildId) => {
+        const orderedChildIds = get().getChildren(parentId).map((child) => child.id);
+        const fromIndex = orderedChildIds.indexOf(draggedChildId);
+        const toIndex = orderedChildIds.indexOf(targetChildId);
+
+        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+        const nextOrder = [...orderedChildIds];
+        const [movedId] = nextOrder.splice(fromIndex, 1);
+        nextOrder.splice(toIndex, 0, movedId);
+
+        get().setChildrenOrder(parentId, nextOrder);
+      },
+
+      sortChildren: (parentId) => {
+        const sortedChildIds = get()
+          .getChildren(parentId)
+          .slice()
+          .sort((a, b) => {
+            if (a.birth_date && b.birth_date) {
+              const byBirthDate = new Date(a.birth_date).getTime() - new Date(b.birth_date).getTime();
+              if (byBirthDate !== 0) return byBirthDate;
+            }
+
+            if (a.birth_date && !b.birth_date) return -1;
+            if (!a.birth_date && b.birth_date) return 1;
+
+            return a.full_name.localeCompare(b.full_name, "id");
+          })
+          .map((child) => child.id);
+
+        get().setChildrenOrder(parentId, sortedChildIds);
       },
 
       getParent: (personId) => {

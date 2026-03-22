@@ -1,7 +1,7 @@
 import type { Person } from "@/types/family";
 import { useFamilyStore } from "@/store/familyStore";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Users, Phone, ChevronDown, ChevronRight, Cake, Pencil, Trash2, GripVertical } from "lucide-react";
+import { UserPlus, Users, Phone, ChevronDown, ChevronRight, Cake, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown, ListFilter } from "lucide-react";
 import { useState } from "react";
 import { cn, calculateAge } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/simple-tooltip";
@@ -19,7 +19,7 @@ interface PersonCardProps {
 }
 
 export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpouse, onAddChild, onAddSibling, onEdit, onDelete }: PersonCardProps) {
-  const { getSpouses, getChildren, reorderChildren } = useFamilyStore();
+  const { getSpouses, getChildren, reorderChildren, sortChildren } = useFamilyStore();
   const [expandLevel, setExpandLevel] = useState<0 | 1 | 2>(2);
   const [draggedChildId, setDraggedChildId] = useState<string | null>(null);
 
@@ -58,6 +58,16 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
 
     reorderChildren(person.id, draggedChildId, targetChildId);
     setDraggedChildId(null);
+  };
+
+  const moveChildByStep = (childId: string, direction: "up" | "down") => {
+    const currentIndex = children.findIndex((child) => child.id === childId);
+    if (currentIndex < 0) return;
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= children.length) return;
+
+    reorderChildren(person.id, childId, children[targetIndex].id);
   };
 
   return (
@@ -201,6 +211,17 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
                   <UserPlus className="h-4 w-4 mr-1.5" />
                   Tambah Anak
                 </Button>
+                {hasChildren && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => sortChildren(person.id)}
+                    className="text-xs w-full sm:w-auto"
+                  >
+                    <ListFilter className="h-4 w-4 mr-1.5" />
+                    Urutkan Anak
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -209,8 +230,8 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
 
       {/* Children */}
       {hasChildren && expandLevel > 0 && (
-        <div className="relative mt-2 ml-2 pl-2 sm:ml-6 sm:pl-4 border-l-2 border-slate-300 space-y-4 pb-2">
-          {children.map((child) => (
+        <div className="relative mt-2 ml-2 pl-2 sm:ml-6 sm:pl-4 border-l-2 border-slate-300 space-y-4 pb-2 overflow-hidden transition-all duration-300 animate-slide-up">
+          {children.map((child, index) => (
             <div
               key={child.id}
               draggable
@@ -223,6 +244,29 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
               }}
               className={cn("relative", draggedChildId === child.id && "opacity-60")}
             >
+              <div
+                className="absolute right-2 top-2 z-20 flex items-center gap-1 rounded-md border bg-background/90 p-0.5"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  aria-label="Pindah anak ke atas"
+                  disabled={index === 0}
+                  onClick={() => moveChildByStep(child.id, "up")}
+                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Pindah anak ke bawah"
+                  disabled={index === children.length - 1}
+                  onClick={() => moveChildByStep(child.id, "down")}
+                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <div className="absolute -left-2 top-6 z-20 rounded bg-background/80 p-0.5 text-muted-foreground">
                 <GripVertical className="h-3.5 w-3.5" />
               </div>
