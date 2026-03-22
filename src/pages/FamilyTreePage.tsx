@@ -3,7 +3,7 @@ import { PersonCard } from "@/components/PersonCard";
 import { FamilyTreeGraph } from "@/components/FamilyTreeGraph";
 import { Button } from "@/components/ui/button";
 import { AddPersonForm } from "@/components/AddPersonForm";
-import { Share2, TreePine, RotateCcw, Loader2, Undo2, Redo2, Search, Save, History, Trash2, RotateCcwSquare } from "lucide-react";
+import { Share2, TreePine, RotateCcw, Loader2, Undo2, Redo2, Search, Save, History, Trash2, RotateCcwSquare, Copy, MessageCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { PersonFormData, Gender, Person, Relationship } from "@/types/family";
@@ -647,8 +647,12 @@ export default function FamilyTreePage() {
                       value={modal.readOnlyUrl} 
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     />
-                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(modal.readOnlyUrl)}>Copy</Button>
-                    <Button variant="whatsapp" size="sm" onClick={() => shareToWA(modal.readOnlyUrl)}>WA</Button>
+                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(modal.readOnlyUrl)} title="Copy link read-only">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="whatsapp" size="icon" onClick={() => shareToWA(modal.readOnlyUrl)} title="Share WA read-only">
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Gunakan link ini untuk membagikan silsilah tanpa akses edit.</p>
                 </div>
@@ -662,8 +666,12 @@ export default function FamilyTreePage() {
                       value={modal.editorUrl} 
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     />
-                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(modal.editorUrl)}>Copy</Button>
-                    <Button variant="whatsapp" size="sm" onClick={() => shareToWA(modal.editorUrl)}>WA</Button>
+                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(modal.editorUrl)} title="Copy link editor">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="whatsapp" size="icon" onClick={() => shareToWA(modal.editorUrl)} title="Share WA editor">
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Gunakan link ini untuk kolaborasi. Siapapun yang memiliki link ini dapat mengubah silsilah.</p>
                 </div>

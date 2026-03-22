@@ -172,14 +172,30 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
                               <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
                               <span className="font-medium text-sm truncate">{spouse.full_name}</span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => onEdit(spouse.id)}
-                              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                              title="Edit pasangan"
-                            >
-                              <SquarePen className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onEdit(spouse.id);
+                                }}
+                                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                title="Edit pasangan"
+                              >
+                                <SquarePen className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onDelete(spouse.id);
+                                }}
+                                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 transition-colors"
+                                title="Hapus pasangan"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
