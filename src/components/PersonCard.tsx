@@ -1,7 +1,7 @@
 import type { Person } from "@/types/family";
 import { useFamilyStore } from "@/store/familyStore";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Users, Phone, ChevronDown, ChevronRight, Cake, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown, ListFilter } from "lucide-react";
+import { UserPlus, Users, Phone, ChevronDown, ChevronRight, Cake, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown, ListFilter, SquarePen } from "lucide-react";
 import { useState } from "react";
 import { cn, calculateAge } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/simple-tooltip";
@@ -167,9 +167,19 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
                       </div>
                       <div className="flex flex-col gap-2">
                         {spouses.map(spouse => (
-                          <div key={spouse.id} className="flex items-center gap-2">
-                            <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
-                            <span className="font-medium text-sm truncate">{spouse.full_name}</span>
+                          <div key={spouse.id} className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
+                              <span className="font-medium text-sm truncate">{spouse.full_name}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onEdit(spouse.id)}
+                              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                              title="Edit pasangan"
+                            >
+                              <SquarePen className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         ))}
                       </div>
