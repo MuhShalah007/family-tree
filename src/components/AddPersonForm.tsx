@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +20,18 @@ export function AddPersonForm({ onSubmit, onCancel, title, defaultGender, initia
   const [gender, setGender] = useState<Gender | "">(initialData?.gender || defaultGender || "");
   const [phone, setPhone] = useState(initialData?.phone_number || "");
   const [birthDate, setBirthDate] = useState(initialData?.birth_date || "");
-  const [secondParentId, setSecondParentId] = useState<string>("");
+  const [secondParentId, setSecondParentId] = useState<string>(spouses?.length === 1 ? spouses[0].id : "");
+  const [linkSingleSpouse, setLinkSingleSpouse] = useState<boolean>(spouses?.length === 1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!spouses || spouses.length !== 1) {
+      return;
+    }
+
+    setSecondParentId(spouses[0].id);
+    setLinkSingleSpouse(true);
+  }, [spouses]);
 
   const handleSubmit = () => {
     const result = personSchema.safeParse({
@@ -42,7 +52,9 @@ export function AddPersonForm({ onSubmit, onCancel, title, defaultGender, initia
     }
 
     setErrors({});
-    onSubmit(result.data, secondParentId || undefined);
+    const selectedSecondParent =
+      spouses?.length === 1 ? (linkSingleSpouse ? secondParentId : "") : secondParentId;
+    onSubmit(result.data, selectedSecondParent || undefined);
   };
 
   return (
@@ -66,7 +78,7 @@ export function AddPersonForm({ onSubmit, onCancel, title, defaultGender, initia
         )}
       </div>
 
-      {spouses && spouses.length > 0 && (
+      {spouses && spouses.length > 1 && (
         <div className="space-y-2">
           <Label htmlFor="secondParent" className="text-sm font-medium">
             Pilih Orang Tua Lain (Pasangan) <span className="text-muted-foreground">(opsional)</span>
@@ -87,6 +99,23 @@ export function AddPersonForm({ onSubmit, onCancel, title, defaultGender, initia
           <p className="text-xs text-muted-foreground">
             Anak akan dikaitkan dengan kedua orang tua.
           </p>
+        </div>
+      )}
+
+      {spouses && spouses.length === 1 && (
+        <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+          <p className="text-sm text-foreground">
+            Pasangan terdeteksi: <span className="font-semibold">{spouses[0].full_name}</span>
+          </p>
+          <label className="flex items-start gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={linkSingleSpouse}
+              onChange={(event) => setLinkSingleSpouse(event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span>Hubungkan juga sebagai orang tua kandung (hilangkan centang jika bukan anak kandung pasangan).</span>
+          </label>
         </div>
       )}
 
