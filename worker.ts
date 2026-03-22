@@ -119,6 +119,18 @@ export default {
       return jsonResponse({ error: "Method not allowed" }, { status: 405 });
     }
 
-    return env.ASSETS.fetch(request);
+    const assetResponse = await env.ASSETS.fetch(request);
+    if (assetResponse.status !== 404) {
+      return assetResponse;
+    }
+
+    const isGetOrHead = request.method === "GET" || request.method === "HEAD";
+    const looksLikeFile = /\.[a-zA-Z0-9]+$/.test(url.pathname);
+    if (isGetOrHead && !looksLikeFile) {
+      const indexUrl = new URL("/index.html", url.origin);
+      return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    }
+
+    return assetResponse;
   },
 };
