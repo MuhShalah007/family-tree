@@ -111,12 +111,35 @@ export function ReadOnlyPersonCard({ person, depth = 0, getSpouses, getChildren 
                         </span>
                       </div>
                       <div className="flex flex-col gap-2">
-                        {spouses.map(spouse => (
-                          <div key={spouse.id} className="flex items-center gap-2">
-                            <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
-                            <span className="font-medium text-sm truncate">{spouse.full_name}</span>
-                          </div>
-                        ))}
+                        {spouses.map(spouse => {
+                          const spouseAge = calculateAge(spouse.birth_date);
+
+                          return (
+                            <div key={spouse.id} className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
+                                <span className="font-medium text-sm truncate">{spouse.full_name}</span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                {spouseAge !== null && (
+                                  <span className="rounded bg-muted px-1.5 py-0.5 font-medium">{spouseAge} thn</span>
+                                )}
+                                {spouse.birth_date && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Cake className="h-3 w-3 shrink-0" />
+                                    {new Date(spouse.birth_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                                  </span>
+                                )}
+                                {spouse.phone_number && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Phone className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{spouse.phone_number}</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

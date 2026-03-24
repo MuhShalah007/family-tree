@@ -166,38 +166,61 @@ export function PersonCard({ person, depth = 0, isSelected, onSelect, onAddSpous
                         </span>
                       </div>
                       <div className="flex flex-col gap-2">
-                        {spouses.map(spouse => (
-                          <div key={spouse.id} className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
-                              <span className="font-medium text-sm truncate">{spouse.full_name}</span>
+                        {spouses.map((spouse) => {
+                          const spouseAge = calculateAge(spouse.birth_date);
+
+                          return (
+                            <div key={spouse.id} className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className="text-lg">{spouse.gender === "L" ? "👨" : "👩"}</span>
+                                  <span className="font-medium text-sm truncate">{spouse.full_name}</span>
+                                </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                  {spouseAge !== null && (
+                                    <span className="rounded bg-muted px-1.5 py-0.5 font-medium">{spouseAge} thn</span>
+                                  )}
+                                  {spouse.birth_date && (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Cake className="h-3 w-3 shrink-0" />
+                                      {new Date(spouse.birth_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                                    </span>
+                                  )}
+                                  {spouse.phone_number && (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Phone className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{spouse.phone_number}</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onEdit(spouse.id);
+                                  }}
+                                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                  title="Edit pasangan"
+                                >
+                                  <SquarePen className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onDelete(spouse.id);
+                                  }}
+                                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 transition-colors"
+                                  title="Hapus pasangan"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onEdit(spouse.id);
-                                }}
-                                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                                title="Edit pasangan"
-                              >
-                                <SquarePen className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onDelete(spouse.id);
-                                }}
-                                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 transition-colors"
-                                title="Hapus pasangan"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
